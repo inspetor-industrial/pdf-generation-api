@@ -3,9 +3,8 @@ import json
 import os
 import datetime
 import time
-import uuid
 
-import PyPDF2 as pdf2
+import pypdf as pdf2
 from flask import typing as ft, Response, request, g
 from flask.views import View
 from playwright.sync_api import sync_playwright
