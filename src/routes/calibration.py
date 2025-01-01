@@ -3,9 +3,10 @@ import json
 import os
 import datetime
 import time
+import uuid
 
 import PyPDF2 as pdf2
-from flask import typing as ft, Response, request
+from flask import typing as ft, Response, request, g
 from flask.views import View
 from playwright.sync_api import sync_playwright
 
@@ -15,6 +16,9 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.pdfgen import canvas
 from reportlab.platypus import Paragraph
 
+from src.firebase import firebase
+from src.firebase.firestore import FirestoreModels
+from src.utils.convert_bytes_to_megabytes import convert_bytes_to_megabytes
 from src.utils.logger import logger
 
 
@@ -27,6 +31,16 @@ class CalibrationValve(View):
 
     def dispatch_request(self) -> ft.ResponseReturnValue:
         report_id = request.args.get('report_id')
+        firebase_user_id = g.get('user_uid', None)
+
+        if firebase_user_id is None:
+            res = Response(
+                response=json.dumps({"error": "Token error", "details": "No token Provided"}),
+                status=401,
+                mimetype='application/json'
+            )
+
+            return res
 
         try:
             logger.info("Validating Calibration Valve")
@@ -142,10 +156,59 @@ class CalibrationValve(View):
                 buffer = io.BytesIO()
                 response_pdf.write_stream(buffer)
 
-                response = Response(buffer.getvalue(), headers={
-                    'Content-Type': 'application/pdf',
-                    'Content-Disposition': f"attachment;filename = {report_id}.pdf"
+                timestamp = int(datetime.datetime.now().timestamp() * 1000)
+                report_name = f"{report_id}-{timestamp}.pdf"
+
+                logger.info(
+                    f"""
+                    >>> name of file: {report_name}
+                    """.strip()
+                )
+
+                blob_file = firebase.storage.blob(f"reports/generated/{firebase_user_id}/{report_id}/{report_name}")
+
+                logger.info("Reset buffer")
+                buffer.seek(0)
+
+                logger.info(f"saving pdf to file and uploading to firebase: {blob_file.public_url}")
+                blob_file.upload_from_file(buffer, content_type="application/pdf")
+
+                logger.info(f"making report public: {blob_file.public_url}")
+                blob_file.make_public()
+
+                report_url = blob_file.public_url
+
+                document = {
+                    "url": report_url,
+                    "name": report_name,
+                    "sizeInIntegerFormat": buffer.getbuffer().nbytes,
+                    "size": convert_bytes_to_megabytes(buffer.getbuffer().nbytes),
+                    "dateInIsoFormat": datetime.datetime.now(
+                        datetime.timezone(datetime.timedelta(hours=-3))
+                    ).isoformat(),
+                    "dateInTimestamp": timestamp,
+                    "createdBy": firebase_user_id,
+                    "createdAt": timestamp,
+                }
+
+                folder = {
+                    "name": f"reports-generated-by-{firebase_user_id}",
+                    "lastUploadedAt": timestamp,
+                    "lastUploadedBy": firebase_user_id,
+                    "lastReportIdUploaded": report_id,
+                    "folderOwner": firebase_user_id,
+                }
+
+                logger.info("creating reports folder collection")
+                firebase.firestore.collection(FirestoreModels.REPORTS.value).document(firebase_user_id).set({
+                    **folder
                 })
+
+                logger.info("creating reports collection")
+                firebase.firestore.collection(FirestoreModels.REPORTS.value).document(firebase_user_id).collection(report_id).add(document)
+
+                logger.success("report generated successfully")
+                response = Response(response=json.dumps(document), headers={ 'Content-Type': 'application/json', })
 
                 return response
             except Exception as e:
