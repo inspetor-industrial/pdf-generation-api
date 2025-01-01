@@ -207,7 +207,15 @@ class CalibrationValve(View):
                 firebase.firestore.collection(FirestoreModels.REPORTS.value).document(firebase_user_id).collection(report_id).add(document)
 
                 logger.success("report generated successfully")
-                response = Response(response=json.dumps(document), headers={ 'Content-Type': 'application/json', })
+                response = Response(
+                    response=json.dumps(document),
+                    headers={
+                        'Content-Type': 'application/json',
+                        "Access-Control-Allow-Origin": "*",
+                        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+                        "Access-Control-Allow-Headers": "Content-Type, Authorization"
+                    }
+                )
 
                 return response
             except Exception as e:
