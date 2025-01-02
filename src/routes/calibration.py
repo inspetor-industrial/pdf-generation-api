@@ -21,15 +21,16 @@ from src.utils.convert_bytes_to_megabytes import convert_bytes_to_megabytes
 from src.utils.logger import logger
 
 
-class CalibrationValve(View):
+class Calibration(View):
     methods = ['GET']
 
     def __init__(self, *args, **kwargs):
-        super(CalibrationValve, self).__init__(*args, **kwargs)
+        super(Calibration, self).__init__(*args, **kwargs)
         self._report_path = None
 
     def dispatch_request(self) -> ft.ResponseReturnValue:
         report_id = request.args.get('report_id')
+        calibration_type = request.args.get('calibration_type')
         firebase_user_id = g.get('user_uid', None)
 
         if firebase_user_id is None:
@@ -42,15 +43,15 @@ class CalibrationValve(View):
             return res
 
         try:
-            logger.info("Validating Calibration Valve")
+            logger.info(f"Validating Calibration {calibration_type.capitalize()}")
         except Exception as e:
-            logger.error("Calibration Valve validation failed")
+            logger.error(f"Calibration {calibration_type.capitalize()} validation failed")
             logger.error(str(e))
 
         base_url = os.getenv('INSPETOR_URL')
-        report_url = f"{base_url}/reports/valve/preview/{report_id}?download=true"
+        report_url = f"{base_url}/reports/{calibration_type}/preview/{report_id}?download=true"
 
-        logger.info(f"Calibration Valve URL: {report_url}")
+        logger.info(f"Calibration {calibration_type.capitalize()} URL: {report_url}")
         with sync_playwright() as p:
             logger.info("Initiating browser session")
             browser = p.chromium.launch()
@@ -164,7 +165,7 @@ class CalibrationValve(View):
                     """.strip()
                 )
 
-                blob_file = firebase.storage.blob(f"reports/generated/{firebase_user_id}/{report_id}/{report_name}")
+                blob_file = firebase.storage.blob(f"reports/generated/{calibration_type}/{firebase_user_id}/{report_id}/{report_name}")
 
                 logger.info("Reset buffer")
                 buffer.seek(0)
@@ -192,6 +193,7 @@ class CalibrationValve(View):
 
                 folder = {
                     "name": f"reports-generated-by-{firebase_user_id}",
+                    "calibrationType": calibration_type,
                     "lastUploadedAt": timestamp,
                     "lastUploadedBy": firebase_user_id,
                     "lastReportIdUploaded": report_id,

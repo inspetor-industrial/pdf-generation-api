@@ -6,7 +6,7 @@ from flask_cors import CORS
 
 from settings import TEMP_FOLDER
 from src.middlewares.auth import AuthMiddleware
-from src.routes.calibration import CalibrationValve
+from src.routes.calibration import Calibration
 
 load_dotenv()
 
@@ -24,8 +24,8 @@ CORS(app, resources={
 app.wsgi_app = AuthMiddleware(app.wsgi_app, app)
 
 app.add_url_rule(
-    "/generate/valve/pdf",
-    view_func=CalibrationValve.as_view("CalibrationValve")
+    "/generate/calibration/pdf",
+    view_func=Calibration.as_view("Calibration")
 )
 
 if __name__ == '__main__':
