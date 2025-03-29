@@ -7,6 +7,7 @@ from flask_cors import CORS
 from settings import TEMP_FOLDER
 from src.middlewares.auth import AuthMiddleware
 from src.routes.calibration import Calibration
+from src.routes.reports import BoilerReport
 
 load_dotenv()
 
@@ -26,6 +27,11 @@ app.wsgi_app = AuthMiddleware(app.wsgi_app, app)
 app.add_url_rule(
     "/generate/calibration/pdf",
     view_func=Calibration.as_view("Calibration")
+)
+
+app.add_url_rule(
+    "/generate/boiler/pdf",
+    view_func=BoilerReport.as_view("Calibration")
 )
 
 if __name__ == '__main__':
