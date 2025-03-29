@@ -181,6 +181,7 @@ class Calibration(View):
                 document = {
                     "url": report_url,
                     "name": report_name,
+                    "type": calibration_type,
                     "sizeInIntegerFormat": buffer.getbuffer().nbytes,
                     "size": convert_bytes_to_megabytes(buffer.getbuffer().nbytes),
                     "dateInIsoFormat": datetime.datetime.now(

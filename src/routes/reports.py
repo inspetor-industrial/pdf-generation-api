@@ -178,6 +178,7 @@ class BoilerReport(View):
                 document = {
                     "url": report_url,
                     "name": report_name,
+                    "type": "boiler",
                     "sizeInIntegerFormat": buffer.getbuffer().nbytes,
                     "size": convert_bytes_to_megabytes(buffer.getbuffer().nbytes),
                     "dateInIsoFormat": datetime.datetime.now(
