@@ -189,22 +189,17 @@ class BoilerReport(View):
                     "createdAt": timestamp,
                 }
 
-                folder = {
-                    "name": f"reports-generated-by-{firebase_user_id}",
-                    "calibrationType": "boiler",
-                    "lastUploadedAt": timestamp,
-                    "lastUploadedBy": firebase_user_id,
-                    "lastReportIdUploaded": report_id,
-                    "folderOwner": firebase_user_id,
-                }
-
-                logger.info("creating reports folder collection")
-                firebase.firestore.collection(FirestoreModels.REPORTS.value).document(firebase_user_id).set({
-                    **folder
-                })
+                # folder = {
+                #     "name": f"reports-generated-by-{firebase_user_id}",
+                #     "calibrationType": calibration_type,
+                #     "lastUploadedAt": timestamp,
+                #     "lastUploadedBy": firebase_user_id,
+                #     "lastReportIdUploaded": report_id,
+                #     "folderOwner": firebase_user_id,
+                # }
 
                 logger.info("creating reports collection")
-                firebase.firestore.collection(FirestoreModels.REPORTS.value).document(firebase_user_id).collection(report_id).add(document)
+                firebase.firestore.collection(FirestoreModels.REPORTS.value).add(document)
 
                 logger.success("report generated successfully")
                 response = Response(
