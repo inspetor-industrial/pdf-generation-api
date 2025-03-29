@@ -2,3 +2,4 @@
 __dev__.py
 
 .env
+**/__pycache__/**

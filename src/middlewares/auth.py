@@ -21,6 +21,10 @@ class AuthMiddleware:
             )
             return res(environ, start_response)
 
+        allowed_routes = ["/apidocs", "/flasgger", "/api"]
+        if any([allowed_route in environ["REQUEST_URI"] for allowed_route in allowed_routes]):
+            return self.wsgi_app(environ, start_response)
+
         auth_header = environ.get("HTTP_AUTHORIZATION", None)
         if auth_header and auth_header.startswith("Bearer "):
             id_token = auth_header.split(" ")[1]
